@@ -9,11 +9,11 @@ def create_tasks_table():
             id SERIAL PRIMARY KEY,
             title TEXT NOT NULL,
             description TEXT,
-            status VARCHAR(20) NOT NULL,
-            assigned_user_id INT REFERENCES users(id),
-            created_by INT REFERENCES users(id),
+            status TEXT DEFAULT 'pending',
+            assigned_to INTEGER,
+            created_by INTEGER,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        );
+        )
     """)
 
     conn.commit()
