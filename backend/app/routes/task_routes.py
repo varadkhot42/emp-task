@@ -55,7 +55,7 @@ def create_task():
         (title, description, status)
     )
 
-    task_id = cur.fetchone()[0]
+    task_id = cur.fetchone()["id"]
     conn.commit()
 
     cur.close()
