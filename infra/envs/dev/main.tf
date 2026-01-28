@@ -32,7 +32,7 @@ module "backend_ec2" {
   subnet_id = module.vpc.public_subnet_id
 
   sg_id     = module.security.backend_sg_id
-  key_name  = "varad-test.pem"
+  key_name  = "varad-test"
 
   user_data = file("${path.module}/user_data.sh")
 }
