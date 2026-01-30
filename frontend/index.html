@@ -1,74 +1,106 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Task Manager</title>
+  <title>Employee Task Manager</title>
+  <style>
+    body {
+      font-family: Arial;
+      max-width: 800px;
+      margin: auto;
+      padding: 20px;
+    }
+    input, button {
+      margin: 4px;
+      padding: 6px;
+    }
+    pre {
+      background: #111;
+      color: #0f0;
+      padding: 10px;
+      max-height: 300px;
+      overflow: auto;
+    }
+  </style>
 </head>
+
 <body>
 
-<h2>Login</h2>
-<input id="user" placeholder="username">
-<input id="pass" placeholder="password" type="password">
+<h2>🔐 Login</h2>
+<input id="loginUser" placeholder="username">
+<input id="loginPass" type="password" placeholder="password">
 <button onclick="login()">Login</button>
+
+<p id="loginStatus"></p>
 
 <hr>
 
-<h2>Create Task (Admin)</h2>
-<input id="title" placeholder="title">
-<input id="desc" placeholder="description">
-<input id="assign" placeholder="assigned_to user id">
+<h2>📝 Create Task (Admin)</h2>
+<input id="taskTitle" placeholder="title">
+<input id="taskDesc" placeholder="description">
+<input id="taskAssign" placeholder="assigned user id">
 <button onclick="createTask()">Create</button>
 
 <hr>
 
-<h2>Tasks</h2>
+<h2>📋 Tasks</h2>
 <button onclick="loadTasks()">Load Tasks</button>
-<pre id="tasks"></pre>
+<pre id="tasksBox"></pre>
 
 <script>
-let token = "";
+
+const API_BASE = "http://13.233.113.109:5000"; 
+
+let TOKEN = "";
 
 function login() {
-  fetch("http://localhost:5000/login", {
+  fetch(`${API_BASE}/login`, {
     method: "POST",
-    headers: {"Content-Type":"application/json"},
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      username: user.value,
-      password: pass.value
+      username: loginUser.value,
+      password: loginPass.value
     })
   })
-  .then(r=>r.json())
-  .then(d=>{
-    token = d.token;
-    alert("Logged in!");
+  .then(r => r.json())
+  .then(d => {
+    if (d.token) {
+      TOKEN = d.token;
+      loginStatus.innerText = "✅ Logged in as " + d.role;
+    } else {
+      loginStatus.innerText = "❌ " + JSON.stringify(d);
+    }
   });
 }
 
 function createTask() {
-  fetch("http://localhost:5000/tasks", {
+  fetch(`${API_BASE}/tasks`, {
     method: "POST",
     headers: {
-      "Content-Type":"application/json",
-      "Authorization": "Bearer " + token
+      "Content-Type": "application/json",
+      "Authorization": "Bearer " + TOKEN
     },
     body: JSON.stringify({
-      title: title.value,
-      description: desc.value,
-      assigned_to: assign.value
+      title: taskTitle.value,
+      description: taskDesc.value,
+      assigned_user_id: parseInt(taskAssign.value)
     })
-  }).then(r=>r.json()).then(alert);
+  })
+  .then(r => r.json())
+  .then(d => alert(JSON.stringify(d)));
 }
 
 function loadTasks() {
-  fetch("http://localhost:5000/tasks", {
+  fetch(`${API_BASE}/tasks`, {
     headers: {
-      "Authorization": "Bearer " + token
+      "Authorization": "Bearer " + TOKEN
     }
   })
-  .then(r=>r.json())
-  .then(d=>{
-    tasks.innerText = JSON.stringify(d,null,2);
+  .then(r => r.json())
+  .then(d => {
+      tasksBox.innerText = JSON.stringify(d, null, 2);
   });
 }
+
 </script>
 
 </body>
