@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Task Manager</title>
+</head>
+<body>
+
+<h2>Login</h2>
+<input id="user" placeholder="username">
+<input id="pass" placeholder="password" type="password">
+<button onclick="login()">Login</button>
+
+<hr>
+
+<h2>Create Task (Admin)</h2>
+<input id="title" placeholder="title">
+<input id="desc" placeholder="description">
+<input id="assign" placeholder="assigned_to user id">
+<button onclick="createTask()">Create</button>
+
+<hr>
+
+<h2>Tasks</h2>
+<button onclick="loadTasks()">Load Tasks</button>
+<pre id="tasks"></pre>
+
+<script>
+let token = "";
+
+function login() {
+  fetch("http://localhost:5000/login", {
+    method: "POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({
+      username: user.value,
+      password: pass.value
+    })
+  })
+  .then(r=>r.json())
+  .then(d=>{
+    token = d.token;
+    alert("Logged in!");
+  });
+}
+
+function createTask() {
+  fetch("http://localhost:5000/tasks", {
+    method: "POST",
+    headers: {
+      "Content-Type":"application/json",
+      "Authorization": "Bearer " + token
+    },
+    body: JSON.stringify({
+      title: title.value,
+      description: desc.value,
+      assigned_to: assign.value
+    })
+  }).then(r=>r.json()).then(alert);
+}
+
+function loadTasks() {
+  fetch("http://localhost:5000/tasks", {
+    headers: {
+      "Authorization": "Bearer " + token
+    }
+  })
+  .then(r=>r.json())
+  .then(d=>{
+    tasks.innerText = JSON.stringify(d,null,2);
+  });
+}
+</script>
+
+</body>
+</html>
