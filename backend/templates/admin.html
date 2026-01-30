@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Admin Dashboard</title>
+</head>
+<body>
+
+<h1>Admin Dashboard</h1>
+
+<h3>Create Task</h3>
+<input id="title" placeholder="title">
+<input id="desc" placeholder="description">
+<input id="assignId" placeholder="employee user id">
+<button onclick="createTask()">Create</button>
+
+<hr>
+
+<h3>All Tasks</h3>
+<button onclick="loadTasks()">Load</button>
+
+<table border="1">
+<thead>
+<tr>
+  <th>ID</th>
+  <th>Title</th>
+  <th>Status</th>
+  <th>Assigned</th>
+  <th>Delete</th>
+</tr>
+</thead>
+<tbody id="tasks"></tbody>
+</table>
+
+<script>
+const TOKEN = localStorage.getItem("token");
+
+if (!TOKEN) window.location.href="/";
+
+function loadTasks() {
+  fetch("/tasks", {
+    headers: { "Authorization":"Bearer "+TOKEN }
+  })
+  .then(r=>r.json())
+  .then(rows=>{
+    tasks.innerHTML="";
+    rows.forEach(t=>{
+      tasks.innerHTML += `
+        <tr>
+          <td>${t.id}</td>
+          <td>${t.title}</td>
+          <td>${t.status}</td>
+          <td>${t.assigned_user_id}</td>
+          <td><button onclick="del(${t.id})">X</button></td>
+        </tr>`;
+    });
+  });
+}
+
+function createTask() {
+  fetch("/tasks", {
+    method:"POST",
+    headers:{
+      "Content-Type":"application/json",
+      "Authorization":"Bearer "+TOKEN
+    },
+    body:JSON.stringify({
+      title:title.value,
+      description:desc.value,
+      assigned_user_id:Number(assignId.value)
+    })
+  }).then(loadTasks);
+}
+
+function del(id){
+  fetch(`/tasks/${id}`,{
+    method:"DELETE",
+    headers:{ "Authorization":"Bearer "+TOKEN }
+  }).then(loadTasks);
+}
+</script>
+
+</body>
+</html>

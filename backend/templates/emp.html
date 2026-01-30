@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Employee Dashboard</title>
+</head>
+<body>
+
+<h1>My Tasks</h1>
+
+<button onclick="loadTasks()">Load</button>
+
+<table border="1">
+<thead>
+<tr>
+  <th>ID</th>
+  <th>Title</th>
+  <th>Status</th>
+</tr>
+</thead>
+<tbody id="tasks"></tbody>
+</table>
+
+<script>
+const TOKEN = localStorage.getItem("token");
+
+if (!TOKEN) window.location.href="/";
+
+function loadTasks(){
+  fetch("/tasks",{
+    headers:{ "Authorization":"Bearer "+TOKEN }
+  })
+  .then(r=>r.json())
+  .then(rows=>{
+    tasks.innerHTML="";
+    rows.forEach(t=>{
+      tasks.innerHTML+=`
+        <tr>
+          <td>${t.id}</td>
+          <td>${t.title}</td>
+          <td>${t.status}</td>
+        </tr>`;
+    });
+  });
+}
+</script>
+
+</body>
+</html>
