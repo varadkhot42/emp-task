@@ -2,7 +2,7 @@ from flask import request, jsonify
 from app.db import get_db
 import uuid
 from functools import wraps
-import hashlib
+#import hashlib
 
 TOKENS = {}  # token -> user dict
 
@@ -58,13 +58,17 @@ def register_routes(app):
         if not row:
             return {"error": "Invalid credentials"}, 401
 
-        incoming_hash = hashlib.sha256(
-            data["password"].encode()
-        ).hexdigest()
+        # incoming_hash = hashlib.sha256(
+        #     data["password"].encode()
+        # ).hexdigest()
 
-        if incoming_hash != row[3]:
+        # if incoming_hash != row[3]:
+        #     return {"error": "Invalid credentials"}, 401
+
+        if data["password"] != row[3]:
             return {"error": "Invalid credentials"}, 401
 
+        
         token = str(uuid.uuid4())
 
         TOKENS[token] = {
