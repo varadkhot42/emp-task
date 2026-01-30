@@ -2,6 +2,7 @@ from flask import request, jsonify
 from app.db import get_db
 import uuid
 from functools import wraps
+import hashlib
 
 TOKENS = {}  # token -> user dict
 
@@ -42,8 +43,12 @@ def register_routes(app):
         cur = conn.cursor()
 
         cur.execute(
-            "SELECT id, username, role FROM users WHERE username=%s AND password=%s",
-            (data["username"], data["password"]),
+            """
+            SELECT id, username, role, password_hash
+            FROM users
+            WHERE username = %s
+            """,
+            (data["username"],),
         )
 
         row = cur.fetchone()
@@ -51,6 +56,13 @@ def register_routes(app):
         conn.close()
 
         if not row:
+            return {"error": "Invalid credentials"}, 401
+
+        incoming_hash = hashlib.sha256(
+            data["password"].encode()
+        ).hexdigest()
+
+        if incoming_hash != row[3]:
             return {"error": "Invalid credentials"}, 401
 
         token = str(uuid.uuid4())
@@ -63,15 +75,15 @@ def register_routes(app):
 
         return {"token": token, "role": row[2]}
 
-    # ---------- CREATE TASK ---------- #
+    # ---------- CREATE TASK (ADMIN ONLY) ---------- #
 
     @app.route("/tasks", methods=["POST"])
     @auth_required
     def create_task():
         user = request.user
 
-        if user["role"] != "admin":
-            return {"error": "Only admin can create tasks"}, 403
+        if user["role"] != "ADMIN":
+            return {"error": "Only ADMIN can create tasks"}, 403
 
         data = request.json
 
@@ -80,7 +92,8 @@ def register_routes(app):
 
         cur.execute(
             """
-            INSERT INTO tasks (title, description, status, created_by, assigned_to)
+            INSERT INTO tasks
+              (title, description, status, created_by, assigned_user_id)
             VALUES (%s,%s,%s,%s,%s)
             RETURNING id
             """,
@@ -89,7 +102,7 @@ def register_routes(app):
                 data.get("description", ""),
                 "OPEN",
                 user["id"],
-                data["assigned_to"],
+                data["assigned_user_id"],
             ),
         )
 
@@ -111,10 +124,13 @@ def register_routes(app):
         conn = get_db()
         cur = conn.cursor()
 
-        if user["role"] == "admin":
+        if user["role"] == "ADMIN":
             cur.execute("SELECT * FROM tasks")
         else:
-            cur.execute("SELECT * FROM tasks WHERE assigned_to=%s", (user["id"],))
+            cur.execute(
+                "SELECT * FROM tasks WHERE assigned_user_id=%s",
+                (user["id"],),
+            )
 
         rows = cur.fetchall()
         cols = [d[0] for d in cur.description]
@@ -136,24 +152,34 @@ def register_routes(app):
         cur = conn.cursor()
 
         cur.execute(
-            "SELECT assigned_to FROM tasks WHERE id=%s",
+            """
+            SELECT assigned_user_id
+            FROM tasks
+            WHERE id=%s
+            """,
             (task_id,),
         )
 
         row = cur.fetchone()
 
         if not row:
+            cur.close()
+            conn.close()
             return {"error": "Task not found"}, 404
 
-        assigned_to = row[0]
+        assigned_user_id = row[0]
 
-        if user["role"] != "admin" and assigned_to != user["id"]:
+        if user["role"] != "ADMIN" and assigned_user_id != user["id"]:
+            cur.close()
+            conn.close()
             return {"error": "Not allowed"}, 403
 
         cur.execute(
             """
             UPDATE tasks
-            SET title=%s, description=%s, status=%s
+            SET title=%s,
+                description=%s,
+                status=%s
             WHERE id=%s
             """,
             (
@@ -170,15 +196,15 @@ def register_routes(app):
 
         return {"message": "Task updated"}
 
-    # ---------- DELETE TASK ---------- #
+    # ---------- DELETE TASK (ADMIN ONLY) ---------- #
 
     @app.route("/tasks/<int:task_id>", methods=["DELETE"])
     @auth_required
     def delete_task(task_id):
         user = request.user
 
-        if user["role"] != "admin":
-            return {"error": "Only admin can delete"}, 403
+        if user["role"] != "ADMIN":
+            return {"error": "Only ADMIN can delete tasks"}, 403
 
         conn = get_db()
         cur = conn.cursor()
